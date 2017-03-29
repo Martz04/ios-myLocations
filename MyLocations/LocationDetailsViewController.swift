@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreLocation
+import CoreData
 
 private let dateFormatter: DateFormatter = {
    let formatter = DateFormatter()
@@ -28,6 +29,9 @@ class LocationDetailsViewController: UITableViewController {
     var coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     var placemark: CLPlacemark?
     var categoryName = "No Category"
+    var date = Date()
+    
+    var managedObjectContext: NSManagedObjectContext!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,7 +46,7 @@ class LocationDetailsViewController: UITableViewController {
         }else {
             addressLabel.text = "No address found"
         }
-        dateLabel.text = format(date: Date())
+        dateLabel.text = format(date: date)
         let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
         gestureRecognizer.cancelsTouchesInView = false
         tableView.addGestureRecognizer(gestureRecognizer)
@@ -115,10 +119,24 @@ class LocationDetailsViewController: UITableViewController {
     }
     
     @IBAction func done(_ sender: UIBarButtonItem) {
-        let hud = HudView.hud(inView: navigationController!.view, animate: true)
-        afterDelay(0.6, closure: {
-            self.dismiss(animated: true, completion: nil)
-        })
+        let _ = HudView.hud(inView: navigationController!.view, animate: true)
+        
+        let location = Location(context: managedObjectContext)
+        location.locationDescription = descriptionText.text
+        location.category = categoryName
+        location.date = date
+        location.latitude = coordinate.latitude
+        location.longitude = coordinate.longitude
+        location.placemark = placemark
+        
+        do {
+            try managedObjectContext.save()
+            afterDelay(0.6, closure: {
+                self.dismiss(animated: true, completion: nil)
+            })
+        } catch {
+            fatalError("Error \(error)")
+        }
     }
     
     
